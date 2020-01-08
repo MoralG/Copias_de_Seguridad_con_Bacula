@@ -563,7 +563,7 @@ Console {
 }
 ~~~
 
-#### El fichero final quedaría de la siguiente manera. [AQUÍ]()
+#### El fichero final quedaría de la siguiente manera. [AQUÍ](https://github.com/MoralG/Copias_de_Seguridad_con_Bacula/blob/master/bacula-dir.conf.md)
 
 Una vez que hayamos terminado de configurar el fichero, guardamos y ejecutamos el siguiente comando para realizar una comprobación, si no devuelve nada, es que todo esta bien.
 
