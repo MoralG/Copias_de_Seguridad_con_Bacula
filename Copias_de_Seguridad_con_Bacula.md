@@ -29,15 +29,13 @@
 
 ----------------------------------------------------
 ----------------------------------------------------
-## Bacula
+# Bacula
 
 #### En esta práctica vamos a utilizar Bacula, que es un gestor de copias de seguridad fácil de manejar, gracias a que utiliza cliente-servidor.
 
 #### Vamos a crear una nueva instancia con el nombre de *Serranito*, en el cual, vamos a utilizar como servidor de copias de seguridad dirgido por bacula. Este puede trabajar con base de datos como MySQL, PostgreSQL y SQLite.
 
-#### 
-
-### Instalación de Bacula
+## Instalación de Bacula
 
 -------------------------------
 
@@ -127,7 +125,7 @@ MariaDB [(none)]> show databases;
     4 rows in set (0.001 sec)
 ~~~
 
-### Configuración de Bacula
+## Configuración de Bacula
 
 Ahora vamos a configurar varios ficheros de bacula para definir:
 
@@ -141,7 +139,7 @@ El primer fichero que tenemos que modificar es `/etc/bacula/bacula-dir.conf`. Es
 
 Vamos a añadir un campo principal, indicandole cual es el `Director` y dentro de este varias opciones.
 
-###### Añadimos apartado Director
+###### Añadimos apartado `Director`
 
 ~~~
 Director {
@@ -161,7 +159,7 @@ Director {
 
 Ahora en el mismo fichero, tenemos que modificar el apartado `JobDefs`, donde indicaremos varios campos, como si fueran variables, y las ampliaremos mas adelante.
 
-###### Añadimos apartado JobDefs
+###### Añadimos apartado `JobDefs`
 
 ~~~
 JobDefs {
@@ -206,7 +204,7 @@ JobDefs {
 
 Ahora vamos a definir los trabajos de los clientes que vamos a utilizar para realizar la copia de seguridad, tenemos que indicarle `Name` (indicamos el nombre del trabajo), `JobDefs` (Definimos en cada cliente la tarea creada anteriormente, `Tarea-Serranito`) y `Client` (le vamos a indicar los nombre de los equipos)
 
-###### Añadimos el apartado Job
+###### Añadimos los apartado `Job` para realizar copias de seguridad
 
 ~~~
 Job {
@@ -235,6 +233,8 @@ Job {
 ~~~
 
 Si realizamos copias de seguridad es para que, en caso de fallo o descuido, podemos reataurarlas. Para esto vamos a definir de nuevos trabajos de los clientes pero en este caso indicamos que tipo es `Restore`. Además tenemos que indicar el `Name`, `Client`, `FileSet`, `Storage`, `Poll`, `Messages`.
+
+###### Añadimos los apartado `Job` para restaurar las copias de seguridad
 
 ~~~
 Job {
@@ -280,6 +280,8 @@ Job {
 
 El siguiente apartado es `FileSet`, donde indicaremos los ficheros y directorios que queremos realizar la copia de seguridad y los que queremos excluir.
 
+###### Añadimos el apartado `FileSet`
+
 ~~~
 FileSet {
  Name = "CopiaCompleta"
@@ -316,6 +318,8 @@ FileSet {
 
 Ahora vamos a definir la programación para la realización de las copias de seguridad. Vamos a indicarle `Name`, y los diferentes `Run`, para programar el nivel si es completo o incremental y el día/hora que queremos que se realicen dichas copias.
 
+###### Añadimos el apartado `Schedule`
+
 ~~~
 Schedule {
  Name = "Programa"
@@ -330,7 +334,7 @@ Schedule {
 
 -----------------------------------
 
-Aquí os dejo como especificar un programa de todas las formas posibles.
+> Aquí os dejo como especificar un programa de todas las formas posibles.
 
 ~~~
 <void-keyword>    = on
@@ -380,6 +384,8 @@ Aquí os dejo como especificar un programa de todas las formas posibles.
 -----------------------------------
 
 Ahora tenemos que definir los clientes, tenemos que tener tantos como indicamos en el apartado de `Job`.
+
+###### Añadimos los apartados `Client`
 
 ~~~
 Client {
@@ -436,6 +442,8 @@ Client {
 
 Ahora toca definir el apartado de `Storage`, que es donde indicaremos el tipo de almacenamiento donde queremos guardar las copias de seguridad.
 
+###### Añadimos el apartado `Storage`
+
 ~~~
 Storage {
  Name = Vol-Serranito
@@ -454,8 +462,9 @@ Storage {
 
 > **Maximun Concurrent Jobs**: Se indica el número máximo de trabajos, con el recurso de almacenamiento actual, que puede ejecutarse simultáneamente.
 
-
 Definimos el apartado de  `Catalog`, que hace referencia a la base de datos que estamos utilizando, indicandole los parametros necesarios para apuntar a ella.
+
+###### Añadimos el apartado `Catalog`
 
 ~~~
 Catalog {
@@ -464,7 +473,9 @@ Catalog {
 }
 ~~~
 
-Por último, tenemos que definir el apartado `Pool` con el nombre `Vol-Backup` que indicamos anteriormente.
+Por último, tenemos que definir el apartado `Pool` con el nombre `Vol-Backup` que indicamos anteriormente para indicarle algunas opciones del volumen para las copias de seguridad.
+
+###### Añadimos el apartado `Pool`
 
 ~~~
 Pool {
@@ -479,7 +490,9 @@ Pool {
 }
 ~~~
 
-El resto de apartados quedarían por defecto
+El resto de apartados `Messages`, `Pool` y `Console` se quedarían por defecto, como muestro a continuación.
+
+###### Añadimos los apartados `Messages`, `Pool` y `Console`
 
 ~~~
 # Reasonable message delivery -- send most everything to email address
@@ -550,309 +563,128 @@ Console {
 }
 ~~~
 
-El fichero final quedaría de la siguiente manera.
+#### El fichero final quedaría de la siguiente manera. [AQUÍ]()
+
+Una vez que hayamos terminado de configurar el fichero, guardamos y ejecutamos el siguiente comando para realizar una comprobación, si no devuelve nada, es que todo esta bien.
+
+###### Comprobación del fichero `bacula-dir.conf`
 
 ~~~
-Director {
-  Name = serranito-dir
-  DIRport = 9101
-  QueryFile = "/etc/bacula/scripts/query.sql"
-  WorkingDirectory = "/var/lib/bacula"
-  PidDirectory = "/run/bacula"
-  Maximum Concurrent Jobs = 20
-  Password = "*************"
-  Messages = Daemon
-  DirAddress = 10.0.0.17
-}
-
-
-
-
-
-JobDefs {
-  Name = "Tarea-Serranito"
-  Type = Backup
-  Level = Incremental
-  Client = serranito-fd
-  FileSet = "CopiaCompleta"
-  Schedule = "Programa"
-  Storage = Vol-Serranito
-  Messages = Standard
-  Pool = Vol-Backup
-  SpoolAttributes = yes
-  Priority = 10
-  Write Bootstrap = "/var/lib/bacula/%c.bsr"
-}
-
-
-
-
-Job {
- Name = "Backup-Serranito"
- JobDefs = "Tarea-Serranito"
- Client = "serranito-fd"
-}
+sudo bacula-dir -tc /etc/bacula/bacula-dir.conf
+~~~
 
-Job {
- Name = "Backup-Croqueta"
- JobDefs = "Tarea-Serranito"
- Client = "croqueta-fd"
-}
-
-Job {
- Name = "Backup-Tortilla"
- JobDefs = "Tarea-Serranito"
- Client = "tortilla-fd"
-}
+## Configuración del volumen externo
 
-Job {
- Name = "Backup-Salmorejo"
- JobDefs = "Tarea-Serranito"
- Client = "salmorejo-fd"
-}
+Vamos a configurar ahora el volumen donde vamos a guardar todas las copias de seguridad.
+Tendremos que crearle una partición, con un sistema de ficheros y configurar el fichero `/etc/fstab` para que monte el volumen al iniciar el sistema.
 
+En primer lugar vamos a ver como es llamo el volumen en el sistema con el comando `lsblk -f`.
 
+~~~
+lsblk -f
+  NAME   FSTYPE LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINT
+  vda                                                                     
+  └─vda1 ext4         6197e068-a892-45cb-9672-a05813e800ee      8G    14% /
+  vdb                   
+~~~
 
+Como podemos ver, el unico que esta libre es el `vdb`. Sabiendo esto, vamos a utilizar `fdisk` para crear una partición en el volumen completo.
 
+###### Creamos la partición `vdb1`
 
+~~~
+sudo fdisk /dev/vdb 
 
-Job {
- Name = "Restore-Serranito"
- Type = Restore
- Client=serranito-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
- Pool = Vol-Backup
- Messages = Standard
-}
+  Welcome to fdisk (util-linux 2.33.1).
+  Changes will remain in memory only, until you decide to write them.
+  Be careful before using the write command.
 
-Job {
- Name = "Restore-Croqueta"
- Type = Restore
- Client=croqueta-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
- Pool = Vol-Backup
- Messages = Standard
-}
-
-Job {
- Name = "Restore-Tortilla"
- Type = Restore
- Client=totilla-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
- Pool = Vol-Backup
- Messages = Standard
-}
-
-Job {
- Name = "Restore-Salmorejo"
- Type = Restore
- Client=salmorejo-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
- Pool = Vol-Backup
- Messages = Standard
-}
+  Device does not contain a recognized partition table.
+  Created a new DOS disklabel with disk identifier 0xdfddf621.
 
+  Command (m for help): n
+  Partition type
+     p   primary (0 primary, 0 extended, 4 free)
+     e   extended (container for logical partitions)
+  Select (default p): p
+  Partition number (1-4, default 1): 1
+  First sector (2048-20971519, default 2048): 
+  Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-20971519, default 20971519): 
 
+  Created a new partition 1 of type 'Linux' and of size 10 GiB.
 
+  Command (m for help): p
+  Disk /dev/vdb: 10 GiB, 10737418240 bytes, 20971520 sectors
+  Units: sectors of 1 * 512 = 512 bytes
+  Sector size (logical/physical): 512 bytes / 512 bytes
+  I/O size (minimum/optimal): 512 bytes / 512 bytes
+  Disklabel type: dos
+  Disk identifier: 0xdfddf621
 
+  Device     Boot Start      End  Sectors Size Id Type
+  /dev/vdb1        2048 20971519 20969472  10G 83 Linux
 
+  Command (m for help): w
+  The partition table has been altered.
+  Calling ioctl() to re-read partition table.
+  Syncing disks.
+~~~
 
-FileSet {
- Name = "CopiaCompleta"
- Include {
-    Options {
-        signature = MD5
-        compression = GZIP
-    }
-    File = /home
-    File = /etc
-    File = /var
- }
- Exclude {
-    File = /var/lib/bacula
-    File = /nonexistant/path/to/file/archive/dir
-    File = /proc
-    File = /var/cache
-    File = /var/tmp
-    File = /tmp
-    File = /sys
-    File = /.journal
-    File = /.fsck
- }
-}
+Creada la partición, tenemos que formatearla con un sistema de ficheros `ext4`.
 
+###### Formateamos la partición `vdb1`
 
+~~~
+sudo mkfs.ext4 /dev/vdb1 
+  mke2fs 1.44.5 (15-Dec-2018)
+  Creating filesystem with 2621184 4k blocks and 655360 inodes
+  Filesystem UUID: faed35cd-a6d0-4ff3-842d-fc347ccbd75b
+  Superblock backups stored on blocks: 
+  	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632
 
+  Allocating group tables: done                            
+  Writing inode tables: done                            
+  Creating journal (16384 blocks): done
+  Writing superblocks and filesystem accounting information: done 
+~~~
 
+Ahora tenemos el volumen listo para montarlo. Creamos el directorio, le cambiamos los permisos y el propietario,para que sean del bacula, y configuramos el fichero `/etc/fstab`.
 
+###### Creamos el directorio `/bacula/Copias_de_Seguridad`
 
+~~~
+sudo mkdir -p /bacula/Copias_de_Seguridad
+~~~
 
+###### Cambiamos los permisos a `755` y el propietario a `bacula`
 
-Schedule {
- Name = "Programa"
- Run = Full 1st sat at 23:59
- Run = Level=Incremental sat at 23:59
-}
+~~~
+sudo chown bacula:bacula /bacula -R
+sudo chmod 755 /bacula -R
+~~~
 
+###### Copiamos el `UUID` para utilizarlo en el fichero `fstab`
 
+~~~
+lsblk -f | egrep "vdb1 *" | cut -d" " -f11
+  faed35cd-a6d0-4ff3-842d-fc347ccbd75b
+~~~
 
+###### Añadimos al fichero `/etc/fstab` la siguiente linea
 
+~~~
+UUID=faed35cd-a6d0-4ff3-842d-fc347ccbd75b     /bacula/Copias_de_Seguridad     ext4     defaults     0     0
+~~~
 
+###### Con la opción `-a` del comando `mount`, hacemos que el sistema vuelva a leer el fichero 'fstab' sin tener que reiniciar
 
-Client {
- Name = serranito-fd
- Address = 10.0.0.17
- FDPort = 9102
- Catalog = mysql-bacula
- Password = "*************"
- File Retention = 90 days
- Job Retention = 6 months
- AutoPrune = yes
-}
+~~~
+sudo mount -a
+~~~
 
-Client {
- Name = croqueta-fd
- Address = 10.0.0.6
- FDPort = 9102
- Catalog = mysql-bacula
- Password = "*************"
- File Retention = 90 days
- Job Retention = 6 months
- AutoPrune = yes
-}
+###### Comprobamos que se ha montado correctamente
 
-Client {
- Name = tortilla-fd
- Address = 10.0.0.9
- FDPort = 9102
- Catalog = mysql-bacula
- Password = "*************"
- File Retention = 90 days
- Job Retention = 6 months
- AutoPrune = yes
-}
-
-Client {
- Name = salmorejo-fd
- Address = 10.0.0.14
- FDPort = 9102
- Catalog = mysql-bacula
- Password = "*************"
- File Retention = 90 days
- Job Retention = 6 months
- AutoPrune = yes
-}
-
-
-
-
-
-
-
-Storage {
- Name = Vol-Serranito
- Address = 10.0.0.17
- SDPort = 9103
- Password = "*************"
- Device = FileAutochanger1
- Media Type = File
- Maximum Concurrent Jobs = 10
-}
-
-
-
-
-
-Catalog {
- Name = mysql-bacula
- dbname = "bacula"; DB Address = "localhost"; dbuser = "bacula"; dbpassword = "***********"
-}
-
-
-
-
-
-Pool {
- Name = Vol-Backup
- Pool Type = Backup
- Recycle = yes 
- AutoPrune = yes
- Volume Retention = 365 days 
- Maximum Volume Bytes = 50G
- Maximum Volumes = 100
- Label Format = "Remoto"
-}
-
-
-
-# Reasonable message delivery -- send most everything to email address
-#  and to the console
-Messages {
-  Name = Standard
-#
-# NOTE! If you send to two email or more email addresses, you will need
-#  to replace the %r in the from field (-f part) with a single valid
-#  email address in both the mailcommand and the operatorcommand.
-#  What this does is, it sets the email address that emails would display
-#  in the FROM field, which is by default the same email as they're being
-#  sent to.  However, if you send email to more than one address, then
-#  you'll have to set the FROM address manually, to a single address.
-#  for example, a 'no-reply@mydomain.com', is better since that tends to
-#  tell (most) people that its coming from an automated source.
-
-#
-  mailcommand = "/usr/sbin/bsmtp -h localhost -f \"\(Bacula\) \<%r\>\" -s \"Bacula: %t %e of %c %l\" %r"
-  operatorcommand = "/usr/sbin/bsmtp -h localhost -f \"\(Bacula\) \<%r\>\" -s \"Bacula: Intervention needed for %j\" %r"
-  mail = root = all, !skipped
-  operator = root = mount
-  console = all, !skipped, !saved
-#
-# WARNING! the following will create a file that you must cycle from
-#          time to time as it will grow indefinitely. However, it will
-#          also keep all your messages if they scroll off the console.
-#
-  append = "/var/log/bacula/bacula.log" = all, !skipped
-  catalog = all
-}
-
-
-#
-# Message delivery for daemon messages (no job).
-Messages {
-  Name = Daemon
-  mailcommand = "/usr/sbin/bsmtp -h localhost -f \"\(Bacula\) \<%r\>\" -s \"Bacula daemon message\" %r"
-  mail = root = all, !skipped
-  console = all, !skipped, !saved
-  append = "/var/log/bacula/bacula.log" = all, !skipped
-}
-
-# Default pool definition
-Pool {
-  Name = Default
-  Pool Type = Backup
-  Recycle = yes                       # Bacula can automatically recycle Volumes
-  AutoPrune = yes                     # Prune expired volumes
-  Volume Retention = 365 days         # one year
-  Maximum Volume Bytes = 50G          # Limit Volume size to something reasonable
-  Maximum Volumes = 100               # Limit number of Volumes in Pool
-}
-
-# Scratch pool definition
-Pool {
-  Name = Scratch
-  Pool Type = Backup
-}
-
-#
-# Restricted console used by tray-monitor to get the status of the director
-#
-Console {
-  Name = serranito-mon
-  Password = "rPNmB3G7UEOX7ztuXzmvjr08SRH5HJCMT"
-  CommandACL = status, .status
-}
+~~~
+lsblk -l | egrep "^vdb1 *"
+  vdb1 254:17   0  10G  0 part /bacula/Copias_de_Seguridad
 ~~~
