@@ -125,7 +125,7 @@ MariaDB [(none)]> show databases;
     4 rows in set (0.001 sec)
 ~~~
 
-## Configuración de Bacula
+## Configuración del fichero `bacula-dir.conf`
 
 Ahora vamos a configurar varios ficheros de bacula para definir:
 
@@ -135,7 +135,14 @@ Ahora vamos a configurar varios ficheros de bacula para definir:
 * Directorios que vamos a copiar
 * Directorios que no vamos a copiar
 
-El primer fichero que tenemos que modificar es `/etc/bacula/bacula-dir.conf`. Este fichero es el fichero principal, donde se configura la gran parte de las opciones de bacula.
+Otros datos a tener en cuenta son los puertos:
+
+* bacula-dir: puerto 9101
+* bacula-fd: puerto 9102
+* bacula-sd: puerto 9103
+* Base de datos MySQL: puerto 3306
+
+El fichero que tenemos que modificar es `/etc/bacula/bacula-dir.conf`. Este fichero es el fichero principal, donde se configura la gran parte de las opciones de bacula.
 
 Vamos a añadir un campo principal, indicandole cual es el `Director` y dentro de este varias opciones.
 
@@ -685,6 +692,292 @@ sudo mount -a
 ###### Comprobamos que se ha montado correctamente
 
 ~~~
-lsblk -l | egrep "^vdb1 *"
+lsblk -l
+  NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+  vda  254:0    0  10G  0 disk 
+  vda1 254:1    0  10G  0 part /
+  vdb  254:16   0  10G  0 disk 
   vdb1 254:17   0  10G  0 part /bacula/Copias_de_Seguridad
+~~~
+
+## Configuración del fichero `bacula-sd.conf`
+
+Con este fichero, que se encuentra en `/etc/bacula/bacula-sd.conf`, vamos a modificar la configuración del `Director`, el cual, lo indicamos en el fichero `bacula-dir.conf`. Este se encargará de realizar las copias en el volumen configurado en el anterior punto.
+
+Indicamos el primer apartado, que es `Storage`, y sus campos serán parecidos a los campos del `Director` pero con el nombre diferente, como vemos a continuación:
+
+###### Configuramos el apartado `Storage`
+
+~~~
+Storage { 
+ Name = serranito-sd
+ SDPort = 9103 
+ WorkingDirectory = "/var/lib/bacula"
+ Pid Directory = "/run/bacula"
+ Maximum Concurrent Jobs = 20
+ SDAddress = 10.0.0.17
+}
+~~~
+
+> **NAME**: En este caso, le indicamos `-sd`, por defecto bacula con esa coletilla hace referencia al fichero donde se encentra.
+
+Ahora vamos a indicar a que director hace referencia este fichero, para esto, tenemos que indicar el mismo `Name` y `Password` que en el fichero `bacula-dir.conf`.
+
+###### Configuramos el apartado `Director` de referencia
+
+~~~
+Director {
+ Name = serranito-dir
+ Password = "**********"
+}
+~~~
+
+Ahora indicamos de nuevo el `Director` pero esta vez es para otorgar privilegios sobre el estado del proceso de almacenamiento de las copias de seguridad. Para realizar esto, tenemos que indicarle la coletilla `-mon`.
+
+###### Configuramos el apartado `Director` para poder ver el estado del proceso
+
+~~~
+Director {
+ Name = serranito-mon
+ Password = "bacula"
+ Monitor = yes
+}
+~~~
+
+Vamos a configurar el cargador automático virtual del volumen montado en el punto anterior, para realizar esto, tenemos que indicar el `Name` del campo `Device` del apartado `Storage` del fichero `bacula-dir.conf`.
+
+###### Configuramos el apartado `Autochanger` para configurar un nuevo `Device`
+
+~~~
+Autochanger {
+ Name = FileAutochanger1
+ Device = DispositivoCopia
+ Changer Command = ""
+ Changer Device = /dev/null
+}
+~~~
+
+Y por último configuramos un `Device` con el mismo nombre que en apartado anterior con la confuración necesaría para el volumen de copias de seguridad.
+
+###### Configuramos el apartado `Device`
+
+~~~
+Device {
+ Name = DispositivoCopia
+ Media Type = File
+ Archive Device = /bacula/Copias_de_Seguridad
+ LabelMedia = yes;
+ Random Access = Yes;
+ AutomaticMount = yes;
+ RemovableMedia = no;
+ AlwaysOpen = no;
+ Maximum Concurrent Jobs = 5
+}
+~~~
+
+> **Archive Device**:
+> 
+> **LabelMedia**:
+> 
+> **Random Access**:
+> 
+> **AutomaticMount**:
+> 
+> **RemovableMedia**:
+> 
+> **AlwaysOpen**:
+
+Dejamos el apartado `Messages` por defecto.
+
+~~~
+Messages {
+  Name = Standard
+  director = serranito-dir = all
+}
+~~~
+
+#### El fichero final quedaría de la siguiente manera. [AQUÍ]()
+
+Una vez que hayamos terminado de configurar el fichero, guardamos y ejecutamos el siguiente comando para realizar una comprobación, si no devuelve nada, es que todo esta bien.
+
+###### Comprobación del fichero `bacula-sd.conf`
+
+~~~
+sudo bacula-sd -tc /etc/bacula/bacula-sd.conf
+~~~
+
+También tenemos que reiniciar los servicios de los dos ficheros modificados.
+
+###### Reiniciamos los servicios
+
+~~~
+sudo systemctl restart bacula-sd.service
+sudo systemctl restart bacula-director.service
+~~~
+
+###### Comprobamos que se ha iniciado correctamente
+~~~
+debian@serranito:~$ sudo systemctl status bacula-sd.service
+  ● bacula-sd.service - Bacula Storage Daemon service
+     Loaded: loaded (/lib/systemd/system/bacula-sd.service; enabled; vendor preset:   enabled)
+     Active: active (running) since Thu 2020-01-09 10:55:25 UTC; 10s ago
+       Docs: man:bacula-sd(8)
+    Process: 12143 ExecStartPre=/usr/sbin/bacula-sd -t -c $CONFIG (code=exited,   status=0/SUCCESS)
+   Main PID: 12148 (bacula-sd)
+      Tasks: 2 (limit: 1168)
+     Memory: 1.0M
+     CGroup: /system.slice/bacula-sd.service
+             └─12148 /usr/sbin/bacula-sd -fP -c /etc/bacula/bacula-sd.conf
+
+  Jan 09 10:55:25 serranito systemd[1]: Starting Bacula Storage Daemon service...
+  Jan 09 10:55:25 serranito systemd[1]: Started Bacula Storage Daemon service.
+
+debian@serranito:~$ sudo systemctl status bacula-director.service
+  ● bacula-director.service - Bacula Director Daemon service
+     Loaded: loaded (/lib/systemd/system/bacula-director.service; enabled; vendor   preset: enabled)
+     Active: active (running) since Thu 2020-01-09 10:55:28 UTC; 19s ago
+       Docs: man:bacula-dir(8)
+    Process: 12155 ExecStartPre=/usr/sbin/bacula-dir -t -c $CONFIG (code=exited,  status=0/SUCCESS)
+   Main PID: 12157 (bacula-dir)
+      Tasks: 3 (limit: 1168)
+     Memory: 1.5M
+     CGroup: /system.slice/bacula-director.service
+             └─12157 /usr/sbin/bacula-dir -fP -c /etc/bacula/bacula-dir.conf
+
+  Jan 09 10:55:28 serranito systemd[1]: Starting Bacula Director Daemon service...
+  Jan 09 10:55:28 serranito systemd[1]: Started Bacula Director Daemon service.
+~~~
+
+## Configuración del fichero `bconsole.conf`
+
+Tenemos que configurar el fichero `/etc/bacula/bconsole.conf` para poder configurar y gestionar bacula desde la consola de comandos. Para activar esta opción tenemos que añadir un apartado `Director`.
+
+###### Añadimos el apartado `Director`
+
+~~~
+Director {
+ Name = serranito-dir
+ DIRport = 9101
+ address = 10.0.0.17
+ Password = "************"
+}
+~~~
+
+## Configuración de los clientes Serranito, Croqueta, Tortilla y Salmorejo en sus respectivos ficheros `bacula-fd.conf`
+
+La configuración de los clientes se realizan de la misma forma en los 4 clientes, con leves cambios en cada uno de ellos.
+
+Mostraré como es la instalación del paquete necesario en cada uno de los clientes y el fichero que hay que modificar. Iré mostrando los cambios diferenciados en cada uno de los clientes añadiendo al principio de cada tarea el cliente al que se corresponde la configuración.
+
+--------------
+
+Empezaremos instalando el cliente de bacula en los diferente clientes. Al distros distintas de Linux, los paquetes y los paquete de instalación son diferentes.
+
+###### Instalación del cliente de Bacula en:
+
+* ##### Serranito (Debian) - Croqueta (Debian) - Tortilla (Ubuntu)
+
+~~~
+sudo apt install bacula-client
+~~~
+
+* ##### Salmorejo (Centos)
+
+~~~
+sudo yum install bacula-client
+~~~
+
+Ahora modificaremos el fichero `bacula-fd.conf` en la ruta `/etc/bacula/bacula-fd.conf` que es igual en todos los cliente.
+
+En este fichero añadiremos la configuración de cada cliente, indicandole el `Director` creado en el servidor Serranito y el del acceso a la configuración por comandos. También tenemos que añadir el apartado `FileDaemon` para indicar los datos necesarios del demonio del cliente y por último el `Messages`.
+
+###### Modificamos los ficheros `/etc/bacula/bacula-fd.conf` en:
+
+* ##### Serranito (Debian) - Croqueta (Debian) - Tortilla (Ubuntu)
+
+
+> **NOTA**: Las diferencias entre los clientes son las que van entre `< >`.
+
+~~~
+Director {
+ Name = serranito-dir
+ Password = "*********"
+}
+
+Director {
+ Name = serranito-mon
+ Password = "*********"
+ Monitor = yes
+}
+
+FileDaemon {
+ Name = <Nombre_Cliente>-fd
+ FDport = 9102
+ WorkingDirectory = /var/lib/bacula
+ Pid Directory = /run/bacula
+ Maximum Concurrent Jobs = 20
+ Plugin Directory = /usr/lib/bacula
+ FDAddress = <Dirección_IP_Cliente>
+}
+
+Messages {
+ Name = Standard
+ director = serranito-dir = all, !skipped, !restored
+}
+~~~
+
+* ##### Salmorejo (Centos)
+
+~~~
+Director {
+ Name = serranito-dir
+ Password = "*********"
+}
+
+Director {
+ Name = serranito-mon
+ Password = "*********"
+ Monitor = yes
+}
+
+FileDaemon {
+  Name = salmorejo-fd
+  FDport = 9102
+  WorkingDirectory = /var/spool/bacula
+  Pid Directory = /var/run
+  Maximum Concurrent Jobs = 20
+  Plugin Directory = /usr/lib64/bacula
+}
+
+Messages {
+ Name = Standard
+ director = serranito-dir = all, !skipped, !restored
+}
+~~~
+
+Guardamos los ficheros y reiniciamos el servicio del fichero `bacula-fd.conf` en todos los clientes.
+
+###### Reiniciamos el servicio en:
+
+* ##### Serranito (Debian) - Croqueta (Debian) - Tortilla (Ubuntu) - Salmorejo (Centos)
+
+~~~
+sudo systemctl restart bacula-fd.service
+~~~
+
+Ahora tenemos que reiniciar los servicios en el Servidor, del fichero `bacula-sd.conf` y del fichero `bacula-dir.conf` para que reconozca los clientes que hemos configurado.
+
+###### Reiniciamos los servicios en:
+
+* ##### Serranito (Debian)
+
+~~~
+sudo systemctl restart bacula-sd.service
+sudo systemctl restart bacula-director.service
+~~~
+
+Cuando tengamos reinicado todos los servicios en los clientes y en el servidor, podemos comprobar que todo ha salido bien, listando los clientes, desde la consola de comando de bacula.
+
+~~~
+	Entrante	IPv4	TCP	9102
 ~~~
