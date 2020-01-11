@@ -160,7 +160,7 @@ Director {
   WorkingDirectory = "/var/lib/bacula"
   PidDirectory = "/run/bacula"
   Maximum Concurrent Jobs = 20
-  Password = "MoralG630789"
+  Password = "**********"
   Messages = Daemon
   DirAddress = 10.0.0.17
 }
@@ -404,7 +404,7 @@ Client {
  Address = 10.0.0.17
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**********"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -415,7 +415,7 @@ Client {
  Address = 10.0.0.6
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**********"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -426,7 +426,7 @@ Client {
  Address = 10.0.0.9
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**********"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -437,7 +437,7 @@ Client {
  Address = 10.0.0.14
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**********"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -460,7 +460,7 @@ Storage {
  Name = Vol-Serranito
  Address = 10.0.0.17
  SDPort = 9103
- Password = "MoralG630789"
+ Password = "**********"
  Device = FileAutochanger1
  Media Type = File
  Maximum Concurrent Jobs = 10
@@ -732,7 +732,7 @@ Ahora vamos a indicar a que director hace referencia este fichero, para esto, te
 ~~~
 Director {
  Name = serranito-dir
- Password = "MoralG630789"
+ Password = "**********"
 }
 ~~~
 
@@ -863,7 +863,7 @@ Director {
  Name = serranito-dir
  DIRport = 9101
  address = 10.0.0.17
- Password = "MoralG630789"
+ Password = "**********"
 }
 ~~~
 
@@ -905,12 +905,12 @@ En este fichero añadiremos la configuración de cada cliente, indicandole el `D
 ~~~
 Director {
  Name = serranito-dir
- Password = "MoralG630789"
+ Password = "**********"
 }
 
 Director {
  Name = serranito-mon
- Password = "MoralG630789"
+ Password = "**********"
  Monitor = yes
 }
 
@@ -935,12 +935,12 @@ Messages {
 ~~~
 Director {
  Name = serranito-dir
- Password = "MoralG630789"
+ Password = "**********"
 }
 
 Director {
  Name = serranito-mon
- Password = "MoralG630789"
+ Password = "**********"
  Monitor = yes
 }
 
