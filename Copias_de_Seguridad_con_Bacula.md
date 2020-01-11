@@ -31,6 +31,10 @@
 ----------------------------------------------------
 # Bacula
 
+## Esquema del escenario
+
+![Tarea1.1](image/Tarea1.1_Bacula.png)
+
 #### En esta práctica vamos a utilizar Bacula, que es un gestor de copias de seguridad fácil de manejar, gracias a que utiliza cliente-servidor.
 
 #### Vamos a crear una nueva instancia con el nombre de *Serranito*, en el cual, vamos a utilizar como servidor de copias de seguridad dirgido por bacula. Este puede trabajar con base de datos como MySQL, PostgreSQL y SQLite.
@@ -156,7 +160,7 @@ Director {
   WorkingDirectory = "/var/lib/bacula"
   PidDirectory = "/run/bacula"
   Maximum Concurrent Jobs = 20
-  Password = "*************"
+  Password = "MoralG630789"
   Messages = Daemon
   DirAddress = 10.0.0.17
 }
@@ -400,7 +404,7 @@ Client {
  Address = 10.0.0.17
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "*************"
+ Password = "MoralG630789"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -411,7 +415,7 @@ Client {
  Address = 10.0.0.6
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "*************"
+ Password = "MoralG630789"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -422,7 +426,7 @@ Client {
  Address = 10.0.0.9
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "*************"
+ Password = "MoralG630789"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -433,7 +437,7 @@ Client {
  Address = 10.0.0.14
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "*************"
+ Password = "MoralG630789"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -456,7 +460,7 @@ Storage {
  Name = Vol-Serranito
  Address = 10.0.0.17
  SDPort = 9103
- Password = "*************"
+ Password = "MoralG630789"
  Device = FileAutochanger1
  Media Type = File
  Maximum Concurrent Jobs = 10
@@ -728,7 +732,7 @@ Ahora vamos a indicar a que director hace referencia este fichero, para esto, te
 ~~~
 Director {
  Name = serranito-dir
- Password = "**********"
+ Password = "MoralG630789"
 }
 ~~~
 
@@ -859,7 +863,7 @@ Director {
  Name = serranito-dir
  DIRport = 9101
  address = 10.0.0.17
- Password = "************"
+ Password = "MoralG630789"
 }
 ~~~
 
@@ -901,12 +905,12 @@ En este fichero añadiremos la configuración de cada cliente, indicandole el `D
 ~~~
 Director {
  Name = serranito-dir
- Password = "*********"
+ Password = "MoralG630789"
 }
 
 Director {
  Name = serranito-mon
- Password = "*********"
+ Password = "MoralG630789"
  Monitor = yes
 }
 
@@ -931,12 +935,12 @@ Messages {
 ~~~
 Director {
  Name = serranito-dir
- Password = "*********"
+ Password = "MoralG630789"
 }
 
 Director {
  Name = serranito-mon
- Password = "*********"
+ Password = "MoralG630789"
  Monitor = yes
 }
 
@@ -976,8 +980,232 @@ sudo systemctl restart bacula-sd.service
 sudo systemctl restart bacula-director.service
 ~~~
 
-Cuando tengamos reinicado todos los servicios en los clientes y en el servidor, podemos comprobar que todo ha salido bien, listando los clientes, desde la consola de comando de bacula.
+Tenemos que abrir los puertos, en mi caso al tener las máquinas en Openstack tengo que crear una regla de seguridad y abrir el puerto 9102/TCP, y en el cliente Salmorejo (Centos) tenemos que abrir el puerto 9102/TCP también con el `firewall-cmd`.
+
+###### Abrir puerto en los clientes Croqueta, Tortilla y Salmorejo
+
+![Tarea1.2](image/Tarea1.2_Bacula.png)
+
+###### Abrir el puerto en el cliente Salmorejo
 
 ~~~
-	Entrante	IPv4	TCP	9102
+firewall-cmd --zone=public --permanent --add-port 9102/tcp
+firewall-cmd --reload
 ~~~
+
+Cuando tengamos reinicado todos los servicios en los clientes y en el servidor y los puertos abiertos, podemos comprobar que todo ha salido bien, listando los clientes, desde la consola de comando de bacula y viendo el estado.
+
+###### Iniciamos la consola de bacula
+~~~
+sudo bconsole
+  Connecting to Director 10.0.0.17:9101
+  1000 OK: 103 serranito-dir Version: 9.4.2 (04 February 2019)
+  Enter a period to cancel a command.
+  *
+~~~
+
+Ahora metemos los comando para listar los clientes y ver sus estados, cuando nos salga el `*`
+
+###### Cliente Serranito
+
+~~~
+*status client
+  The defined Client resources are:
+       1: serranito-fd
+       2: croqueta-fd
+       3: tortilla-fd
+       4: salmorejo-fd
+  Select Client (File daemon) resource (1-4): 1
+  Connecting to Client serranito-fd at 10.0.0.17:9102
+
+  serranito-fd Version: 9.4.2 (04 February 2019)  x86_64-pc-linux-gnu debian buster/sid
+  Daemon started 09-Jan-20 18:32. Jobs: run=0 running=0.
+   Heap: heap=114,688 smbytes=22,012 max_bytes=22,029 bufs=68 max_bufs=68
+   Sizes: boffset_t=8 size_t=8 debug=0 trace=0 mode=0,0 bwlimit=0kB/s
+   Plugin: bpipe-fd.so 
+
+  Running Jobs:
+  Director connected at: 09-Jan-20 19:15
+  No Jobs running.
+  ====
+~~~
+
+###### Cliente Croqueta
+
+~~~
+*status client
+  The defined Client resources are:
+       1: serranito-fd
+       2: croqueta-fd
+       3: tortilla-fd
+       4: salmorejo-fd
+  Select Client (File daemon) resource (1-4): 2
+  Connecting to Client croqueta-fd at 10.0.0.6:9102
+
+  croqueta-fd Version: 9.4.2 (04 February 2019)  x86_64-pc-linux-gnu debian buster/sid
+  Daemon started 09-Jan-20 18:33. Jobs: run=0 running=0.
+   Heap: heap=114,688 smbytes=22,010 max_bytes=22,027 bufs=68 max_bufs=68
+   Sizes: boffset_t=8 size_t=8 debug=0 trace=0 mode=0,0 bwlimit=0kB/s
+   Plugin: bpipe-fd.so 
+
+  Running Jobs:
+  Director connected at: 09-Jan-20 19:16
+  No Jobs running.
+  ====
+~~~
+
+###### Cliente Tortilla
+
+~~~
+*status client
+  The defined Client resources are:
+       1: serranito-fd
+       2: croqueta-fd
+       3: tortilla-fd
+       4: salmorejo-fd
+  Select Client (File daemon) resource (1-4): 3
+  Connecting to Client tortilla-fd at 10.0.0.9:9102
+
+  tortilla-fd Version: 9.0.6 (20 November 2017) x86_64-pc-linux-gnu ubuntu 18.04
+  Daemon started 09-Jan-20 18:34. Jobs: run=0 running=0.
+   Heap: heap=110,592 smbytes=21,981 max_bytes=21,998 bufs=68 max_bufs=68
+   Sizes: boffset_t=8 size_t=8 debug=0 trace=0 mode=0,0 bwlimit=0kB/s
+   Plugin: bpipe-fd.so 
+
+  Running Jobs:
+  Director connected at: 09-Jan-20 19:16
+  No Jobs running.
+  ====
+
+  Terminated Jobs:
+  ====
+~~~
+
+###### Cliente Salmorejo
+
+~~~
+*status client
+  The defined Client resources are:
+       1: serranito-fd
+       2: croqueta-fd
+       3: tortilla-fd
+       4: salmorejo-fd
+  Select Client (File daemon) resource (1-4): 4
+  Connecting to Client salmorejo-fd at 10.0.0.14:9102
+
+  salmorejo-fd Version: 9.0.6 (20 November 2017) x86_64-redhat-linux-gnu redhat (Core)
+  Daemon started 09-Jan-20 18:34. Jobs: run=0 running=0.
+   Heap: heap=102,400 smbytes=21,984 max_bytes=22,001 bufs=68 max_bufs=68
+   Sizes: boffset_t=8 size_t=8 debug=0 trace=0 mode=0,0 bwlimit=0kB/s
+   Plugin: bpipe-fd.so 
+
+  Running Jobs:
+  Director connected at: 09-Jan-20 19:16
+  No Jobs running.
+  ====
+~~~
+
+## Gestión de Bacula desde la consola
+
+Estamos llegando al final, como último punto antes de realizar las copias de seguridad y de restaurarlas, vamos a ponerle un nombre a nuestro volumen e indicarle el `Pool` que queremos que se le adjunte.
+
+Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `label`, esto hará que solo reconozca nuestro `Catalog` y nuestro `Storage`, luego nombraremos a nuestro volumen y por último indicaremos el `Pool` que queremos utilizar.
+
+###### Iniciamos la consola de Bacula e introducimos el comando `label`
+
+~~~
+*label
+  Automatically selected Catalog: mysql-bacula
+  Using Catalog "mysql-bacula"
+  Automatically selected Storage: Vol-Serranito
+  
+  Enter new Volume name: backups
+  
+    Defined Pools:
+         1: Default
+         2: File
+         3: Scratch
+         4: Vol-Backup
+  Select the Pool (1-4): 4
+  
+    Connecting to Storage daemon Vol-Serranito at 10.0.0.17:9103 ...
+    Sending label command for Volume "backups" Slot 0 ...
+    3000 OK label. VolBytes=226 VolABytes=0 VolType=1 Volume="backups"    Device="DispositivoCopia" (/bacula/Copias_de_Seguridad)
+    Catalog record for Volume "backups", Slot 0  successfully created.
+    Requesting to mount FileAutochanger1 ...
+    3906 File device ""DispositivoCopia" (/bacula/Copias_de_Seguridad)" is always     mounted.
+~~~
+
+Ya tenemos todo configurado para que se realicen la copias de seguridad programadas, pero para no tener que esperar para probar si funciona o no, vamos a hacer que las haga de forma manual.
+
+Iniciamos la consola de bacula y con el comando `run` nos muestra los `Jobs` que hay para activar.
+
+~~~
+*run
+  A job name must be specified.
+  The defined Job resources are:
+       1: Backup-Serranito
+       2: Backup-Croqueta
+       3: Backup-Tortilla
+       4: Backup-Salmorejo
+       5: Restore-Serranito
+       6: Restore-Croqueta
+       7: Restore-Tortilla
+       8: Restore-Salmorejo
+
+  Select Job resource (1-8): 2
+    Run Backup job
+    JobName:  Backup-Croqueta
+    Level:    Incremental
+    Client:   croqueta-fd
+    FileSet:  CopiaCompleta
+    Pool:     Vol-Backup (From Job resource)
+    Storage:  Vol-Serranito (From Job resource)
+    When:     2020-01-11 17:05:53
+    Priority: 10
+
+    OK to run? (yes/mod/no): yes
+    Job queued. JobId=6
+~~~
+
+Nos dice que ha iniciado el `job` llamado `Backup-Croqueta`, con esto, podemos ejecutar el comando `status` e indicarle que nos muestre el estado de los clientes y luego indicarle el de Croqueta.
+
+~~~
+*status
+  Status available for:
+       1: Director
+       2: Storage
+       3: Client
+       4: Scheduled
+       5: Network
+       6: All
+
+  Select daemon type for status (1-6): 3
+    The defined Client resources are:
+         1: serranito-fd
+         2: croqueta-fd
+         3: tortilla-fd
+         4: salmorejo-fd
+
+  Select Client (File daemon) resource (1-4): 2
+    Connecting to Client croqueta-fd at 10.0.0.6:9102
+
+    croqueta-fd Version: 9.4.2 (04 February 2019)  x86_64-pc-linux-gnu debian buster/ sid
+    Daemon started 09-Jan-20 18:33. Jobs: run=2 running=0.
+     Heap: heap=126,976 smbytes=255,814 max_bytes=468,947 bufs=97 max_bufs=155
+     Sizes: boffset_t=8 size_t=8 debug=0 trace=0 mode=0,0 bwlimit=0kB/s
+     Plugin: bpipe-fd.so 
+
+    Running Jobs:
+    Director connected at: 11-Jan-20 17:18
+    No Jobs running.
+    ====
+
+    Terminated Jobs:
+     JobId  Level    Files      Bytes   Status   Finished        Name 
+    ===================================================================
+         6  Full      4,556    37.09 M  OK       11-Jan-20 17:06 Backup-Croqueta
+    ====
+~~~
+
+Como podemos ver, la copia se ha realizado correctamente. A partir de aquí, podemos ver los estados de los demas cliente, realizar restauraciones, etc.

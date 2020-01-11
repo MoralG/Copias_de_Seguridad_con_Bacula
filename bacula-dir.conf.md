@@ -16,16 +16,14 @@ Director {
 # Indicar la tarea y sus opciones
 
 JobDefs {
-  Name = "Tarea-Serranito"
+  Name = "Jobs-Backups"
   Type = Backup
   Level = Incremental
-  Client = serranito-fd
-  FileSet = "CopiaCompleta"
+  FileSet = "Files-Copy"
   Schedule = "Programa"
-  Storage = Vol-Serranito
+  Storage = Vol-Backup
   Messages = Standard
   Pool = Vol-Backup
-  SpoolAttributes = yes
   Priority = 10
   Write Bootstrap = "/var/lib/bacula/%c.bsr"
 }
@@ -34,25 +32,25 @@ JobDefs {
 
 Job {
  Name = "Backup-Serranito"
- JobDefs = "Tarea-Serranito"
+ JobDefs = "Jobs-Backups"
  Client = "serranito-fd"
 }
 
 Job {
  Name = "Backup-Croqueta"
- JobDefs = "Tarea-Serranito"
+ JobDefs = "Jobs-Backups"
  Client = "croqueta-fd"
 }
 
 Job {
  Name = "Backup-Tortilla"
- JobDefs = "Tarea-Serranito"
+ JobDefs = "Jobs-Backups"
  Client = "tortilla-fd"
 }
 
 Job {
  Name = "Backup-Salmorejo"
- JobDefs = "Tarea-Serranito"
+ JobDefs = "Jobs-Backups"
  Client = "salmorejo-fd"
 }
 
@@ -62,8 +60,8 @@ Job {
  Name = "Restore-Serranito"
  Type = Restore
  Client=serranito-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
+ FileSet="Files-Copy"
+ Storage = Vol-Backup
  Pool = Vol-Backup
  Messages = Standard
 }
@@ -72,8 +70,8 @@ Job {
  Name = "Restore-Croqueta"
  Type = Restore
  Client=croqueta-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
+ FileSet="Files-Copy"
+ Storage = Vol-Backup
  Pool = Vol-Backup
  Messages = Standard
 }
@@ -82,8 +80,8 @@ Job {
  Name = "Restore-Tortilla"
  Type = Restore
  Client=tortilla-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
+ FileSet="Files-Copy"
+ Storage = Vol-Backup
  Pool = Vol-Backup
  Messages = Standard
 }
@@ -92,8 +90,8 @@ Job {
  Name = "Restore-Salmorejo"
  Type = Restore
  Client=salmorejo-fd
- FileSet="CopiaCompleta"
- Storage = Vol-Serranito
+ FileSet="Files-Copy"
+ Storage = Vol-Backup
  Pool = Vol-Backup
  Messages = Standard
 }
@@ -101,11 +99,10 @@ Job {
 # Indicar la ruta y configuración de los ficheros de la copia de seguridad
 
 FileSet {
- Name = "CopiaCompleta"
+ Name = "Files-Copy"
  Include {
     Options {
         signature = MD5
-        compression = GZIP
     }
     File = /home
     File = /etc
@@ -179,13 +176,12 @@ Client {
 }
 
 Storage {
- Name = Vol-Serranito
+ Name = Vol-Backup
  Address = 10.0.0.17
  SDPort = 9103
  Password = "MoralG630789"
- Device = FileAutochanger1
+ Device = Device-Vol-Backup
  Media Type = File
- Maximum Concurrent Jobs = 10
 }
 
 # Indicar la base de datos
@@ -205,7 +201,6 @@ Pool {
  Volume Retention = 365 days 
  Maximum Volume Bytes = 50G
  Maximum Volumes = 100
- Label Format = "Remoto"
 }
 
 
