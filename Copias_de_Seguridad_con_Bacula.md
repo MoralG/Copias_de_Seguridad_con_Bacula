@@ -160,7 +160,7 @@ Director {
   WorkingDirectory = "/var/lib/bacula"
   PidDirectory = "/run/bacula"
   Maximum Concurrent Jobs = 20
-  Password = "**********"
+  Password = "MoralG630789"
   Messages = Daemon
   DirAddress = 10.0.0.17
 }
@@ -168,21 +168,53 @@ Director {
 
 > **NOTA**: Cambiamos la `Password` y `DirAddress`. Lo demás lo dejamos por defecto.
 
-Ahora en el mismo fichero, tenemos que modificar el apartado `JobDefs`, donde indicaremos varios campos, como si fueran variables, y las ampliaremos mas adelante.
+Ahora en el mismo fichero, tenemos que añadir los apartado s`JobDefs`, donde indicaremos varios campos, como si fueran variables, y las ampliaremos mas adelante. El apartado `JobDefs` agrupa un grupo de `Jobs`, donde los parametros que se apliquen a este, se aplicaran a todos los `Jobs` que esten en el.
+
+Creamos tres `JobDefs`, uno para cada tipo de tarea.
+* Copia de seguridad diariamente
+* Copia de seguridad semanalmente
+* Copia de seguridad mensualmente
 
 ###### Añadimos apartado `JobDefs`
 
 ~~~
 JobDefs {
-  Name = "Tarea-Serranito"
+  Name = "Tarea-Diaria"
   Type = Backup
   Level = Incremental
   Client = serranito-fd
-  FileSet = "CopiaCompleta"
-  Schedule = "Programa"
+  Schedule = "Programa-Diario"
+  Pool = Daily
   Storage = Vol-Serranito
   Messages = Standard
-  Pool = Vol-Backup
+  SpoolAttributes = yes
+  Priority = 10
+  Write Bootstrap = "/var/lib/bacula/%c.bsr"
+}
+
+
+JobDefs {
+  Name = "Tarea-Semanal"
+  Type = Backup
+  Client = serranito-fd
+  Schedule = "Programa-Semanal"
+  Pool = Weekly
+  Storage = Vol-Serranito
+  Messages = Standard
+  SpoolAttributes = yes
+  Priority = 10
+  Write Bootstrap = "/var/lib/bacula/%c.bsr"
+}
+
+
+JobDefs {
+  Name = "Tarea-Mensual"
+  Type = Backup
+  Client = serranito-fd
+  Schedule = "Programa-Mensual"
+  Pool = Monthly
+  Storage = Vol-Serranito
+  Messages = Standard
   SpoolAttributes = yes
   Priority = 10
   Write Bootstrap = "/var/lib/bacula/%c.bsr"
@@ -193,19 +225,17 @@ JobDefs {
 > 
 > **Type**: Indicamos que el tipo de tarea son copias de seguridad, `Backup`.
 >
-> **Level**: Indicamos como queremos realizar las copias de seguridad, en nuestro caso `Incremental`, que es una copia de los datos creados y modificados desde la última ejecución de la copia de seguridad.
+> **Level**: Indicamos como queremos realizar las copias de seguridad, en nuestro caso `Incremental`, ya que es una copia de los datos creados y modificados desde la última ejecución de la copia de seguridad.
 >
 > **Client**: El nombre del cliente en el que se va a ejecutar esta tarea.
 >
-> **FileSet**: Le indicamos el nombre que vamos a utilizar en el apartado siguiente, donde expandiremos el campo de `CopiaCompleta`, indicandole los ficheros que queremos que se realicen la copia.
->
-> **Schedule**: Indicamos el nombre que vamos a utilizar para extender el campo `Programa`, donde indicaremos la fecha y la regularidad de las copias de seguridad.
+> **Schedule**: Indicamos el nombre que vamos a utilizar para extender cada campo, donde indicaremos la fecha y la fecha de realización de las copias de seguridad.
 >
 > **Storage**: Indicamos el nombre del apartado `Vol-Serranito`, el cual se extenderá mas adelante e indicaremos el tipo de almacenamiento vamos a utilizar.
 >
 > **Messages**: Tipo de mensaje que se dejará en `Standar` que es la opción por defecto, el cual indicará como mandará los mensajes de sucesos de bacula.
 >
-> **Pool**: Indicaremos el nombre del apartado `pool` que se configurará mas adelante y en él estamos indicando el volumen de almacenamiento donde se creará y almacenará las copias.
+> **Pool**: Indicaremos el nombre del apartado `pool` que se configurará mas adelante y en él indicaremos el volumen de almacenamiento donde se creará y almacenará las copias, además de las retenciones de estas.
 >
 > **SpoolAttributes**: Esta opción permite trabajar con los atributos del spool en un fichero temporal, así que dejaremos la opcion por defecto.
 >
@@ -213,37 +243,110 @@ JobDefs {
 >
 > **Write Bootstrap**: En este apartado indica donde esta el fichero bacula, dicha opción dejamos la que esta por defecto.
 
-Ahora vamos a definir los trabajos de los clientes que vamos a utilizar para realizar la copia de seguridad, tenemos que indicarle `Name` (indicamos el nombre del trabajo), `JobDefs` (Definimos en cada cliente la tarea creada anteriormente, `Tarea-Serranito`) y `Client` (le vamos a indicar los nombre de los equipos)
+Ahora vamos a definir los trabajos de los clientes que vamos a utilizar para realizar la copia de seguridad, para esto utilizamos los apartados `Job`. 
+
+Tenemos que indicarle `Name` (indicamos el nombre del trabajo), `JobDefs` (Definimos en cada cliente la tarea creada anteriormente para cada tipo de `Job` y `Client` (le vamos a indicar los nombre de los equipos)
+
+También le indicamos el `FileSet`, el cual, expandiremos el apartado mas adelante y donde indicaremos los ficheros que queremos que se realicen la copia.
+
+Vamos a crear un `Job` para cada cliente y para cada fecha de la realización de la copia.
 
 ###### Añadimos los apartado `Job` para realizar copias de seguridad
 
+##### Diariamente
 ~~~
 Job {
- Name = "Backup-Serranito"
- JobDefs = "Tarea-Serranito"
+ Name = "Daily-Backup-Serranito"
+ JobDefs = "Tarea-Diaria"
  Client = "serranito-fd"
+ FileSet= "Copia-Serranito"
 }
 
 Job {
- Name = "Backup-Croqueta"
- JobDefs = "Tarea-Serranito"
+ Name = "Daily-Backup-Croqueta"
+ JobDefs = "Tarea-Diaria"
  Client = "croqueta-fd"
+ FileSet= "Copia-Croqueta"
 }
 
 Job {
- Name = "Backup-Tortilla"
- JobDefs = "Tarea-Serranito"
+ Name = "Daily-Backup-Tortilla"
+ JobDefs = "Tarea-Diaria"
  Client = "tortilla-fd"
+ FileSet= "Copia-Tortilla"
 }
 
 Job {
- Name = "Backup-Salmorejo"
- JobDefs = "Tarea-Serranito"
+ Name = "Daily-Backup-Salmorejo"
+ JobDefs = "Tarea-Diaria"
  Client = "salmorejo-fd"
+ FileSet= "Copia-Salmorejo"
 }
 ~~~
 
-Si realizamos copias de seguridad es para que, en caso de fallo o descuido, podemos reataurarlas. Para esto vamos a definir de nuevos trabajos de los clientes pero en este caso indicamos que tipo es `Restore`. Además tenemos que indicar el `Name`, `Client`, `FileSet`, `Storage`, `Poll`, `Messages`.
+##### Semanalmente
+~~~
+Job {
+ Name = "Weekly-Backup-Serranito"
+ JobDefs = "Tarea-Semanal"
+ Client = "serranito-fd"
+ FileSet= "Copia-Serranito"
+}
+
+Job {
+ Name = "Weekly-Backup-Croqueta"
+ JobDefs = "Tarea-Semanal"
+ Client = "croqueta-fd"
+ FileSet= "Copia-Croqueta"
+}
+
+Job {
+ Name = "Weekly-Backup-Tortilla"
+ JobDefs = "Tarea-Semanal"
+ Client = "tortilla-fd"
+ FileSet= "Copia-Tortilla"
+}
+
+Job {
+ Name = "Weekly-Backup-Salmorejo"
+ JobDefs = "Tarea-Semanal"
+ Client = "salmorejo-fd"
+ FileSet= "Copia-Salmorejo"
+}
+~~~
+
+##### Mensualmente
+~~~
+Job {
+ Name = "Monthly-Backup-Serranito"
+ JobDefs = "Tarea-Mensual"
+ Client = "serranito-fd"
+ FileSet= "Copia-Serranito"
+}
+
+Job {
+ Name = "Monthly-Backup-Croqueta"
+ JobDefs = "Tarea-Mensual"
+ Client = "croqueta-fd"
+ FileSet= "Copia-Croqueta"
+}
+
+Job {
+ Name = "Monthly-Backup-Tortilla"
+ JobDefs = "Tarea-Mensual"
+ Client = "tortilla-fd"
+ FileSet= "Copia-Tortilla"
+}
+
+Job {
+ Name = "Monthly-Backup-Salmorejo"
+ JobDefs = "Tarea-Mensual"
+ Client = "salmorejo-fd"
+ FileSet= "Copia-Salmorejo"
+}
+~~~
+
+Si realizamos copias de seguridad es para que, en caso de fallo o descuido, podemos reataurarlas. Para esto vamos a definir, de nuevo, `Job` para clientes pero en este caso indicamos que el tipo es `Restore`. Además tenemos que indicar el `Name`, `Client`, `FileSet`, `Storage`, `Poll`, `Messages`.
 
 ###### Añadimos los apartado `Job` para restaurar las copias de seguridad
 
@@ -252,7 +355,7 @@ Job {
  Name = "Restore-Serranito"
  Type = Restore
  Client=serranito-fd
- FileSet="CopiaCompleta"
+ FileSet= "Copia-Serranito"
  Storage = Vol-Serranito
  Pool = Vol-Backup
  Messages = Standard
@@ -262,7 +365,7 @@ Job {
  Name = "Restore-Croqueta"
  Type = Restore
  Client=croqueta-fd
- FileSet="CopiaCompleta"
+ FileSet= "Copia-Croqueta"
  Storage = Vol-Serranito
  Pool = Vol-Backup
  Messages = Standard
@@ -272,7 +375,7 @@ Job {
  Name = "Restore-Tortilla"
  Type = Restore
  Client=totilla-fd
- FileSet="CopiaCompleta"
+ FileSet= "Copia-Tortilla"
  Storage = Vol-Serranito
  Pool = Vol-Backup
  Messages = Standard
@@ -282,20 +385,20 @@ Job {
  Name = "Restore-Salmorejo"
  Type = Restore
  Client=salmorejo-fd
- FileSet="CopiaCompleta"
+ FileSet= "Copia-Salmorejo"
  Storage = Vol-Serranito
  Pool = Vol-Backup
  Messages = Standard
 }
 ~~~
 
-El siguiente apartado es `FileSet`, donde indicaremos los ficheros y directorios que queremos realizar la copia de seguridad y los que queremos excluir.
+Los siguientes apartados son los `FileSet`, donde indicaremos los ficheros y directorios que queremos realizar la copia de seguridad y los que queremos excluir.
 
 ###### Añadimos el apartado `FileSet`
 
 ~~~
 FileSet {
- Name = "CopiaCompleta"
+ Name = "Copia-Serranito"
  Include {
     Options {
         signature = MD5
@@ -304,6 +407,77 @@ FileSet {
     File = /home
     File = /etc
     File = /var
+    File = /bacula
+ }
+ Exclude {
+    File = /nonexistant/path/to/file/archive/dir
+    File = /proc
+    File = /var/cache
+    File = /var/tmp
+    File = /tmp
+    File = /sys
+    File = /.journal
+    File = /.fsck
+ }
+
+FileSet {
+ Name = "Copia-Croqueta"
+ Include {
+    Options {
+        signature = MD5
+        compression = GZIP
+    }
+    File = /home
+    File = /etc
+    File = /var
+ }
+ Exclude {
+    File = /var/lib/bacula
+    File = /nonexistant/path/to/file/archive/dir
+    File = /proc
+    File = /var/tmp
+    File = /tmp
+    File = /sys
+    File = /.journal
+    File = /.fsck
+ }
+}
+
+FileSet {
+ Name = "Copia-Tortilla"
+ Include {
+    Options {
+        signature = MD5
+        compression = GZIP
+    }
+    File = /home
+    File = /etc
+    File = /var
+ }
+ Exclude {
+    File = /var/lib/bacula
+    File = /nonexistant/path/to/file/archive/dir
+    File = /proc
+    File = /var/cache
+    File = /var/tmp
+    File = /tmp
+    File = /sys
+    File = /.journal
+    File = /.fsck
+ }
+}
+
+FileSet {
+ Name = "Copia-Salmorejo"
+ Include {
+    Options {
+        signature = MD5
+        compression = GZIP
+    }
+    File = /home
+    File = /etc
+    File = /var
+    File = /usr/share/nginx
  }
  Exclude {
     File = /var/lib/bacula
@@ -333,15 +507,20 @@ Ahora vamos a definir la programación para la realización de las copias de seg
 
 ~~~
 Schedule {
- Name = "Programa"
- Run = Full 1st sat at 23:59
- Run = Level=Incremental sat at 23:59
+ Name = "Programa-Diario"
+ Run = Level=Incremental Pool=Daily daily at 20:20
+}
+
+Schedule {
+ Name = "Programa-Semanal"
+ Run = Level=Full Pool=Weekly sat at 23:50
+}
+
+Schedule {
+ Name = "Programa-Mensual"
+ Run = Level=Full Pool=Monthly 1st sun at 23:50 
 }
 ~~~
-
-> En el primer `Run` le indicamos que realice una copia completa, `Full`, los primeros Sábados de cada mes a las 23:59.
->
-> El segundo `Run` le indicamos que realice una copia incremental, todos los Sábados a las 23:59.
 
 -----------------------------------
 
@@ -445,9 +624,9 @@ Client {
 ~~~
 > **Catalog**: Esto especifica el nombre del recurso de catálogo que se utilizará para este cliente.
 >
-> **File Retention**: Si `AutoPrune` esta definido como `Yes`, bacula mantendrá los registros de los ficheros, el tiempo que se le indica en el catalogo.
+> **File Retention**: Si `AutoPrune` esta definido como `Yes`, bacula mantendrá los registros de los ficheros en el catalogo.
 >
-> **Job Retention**: Si `AutoPrune` esta definido como `Yes`, bacula mantendrá los registros de los trabajos, el tiempo que se le indica en el catalogo.
+> **Job Retention**: Si `AutoPrune` esta definido como `Yes`, bacula mantendrá los registros de los trabajo en el catalogo.
 >
 > **AutoPrune**: Si se establece en `Yes`, Bacula aplicará automáticamente `File Retention` y `Job Retention` para el cliente al final del trabajo. Si se establece en `No`, no se realizará la eleminación y su Catálogo aumentará de tamaño cada vez que ejecute un Trabajo. (Esto no tiene nada que ver con los volumenes).
 
@@ -484,11 +663,41 @@ Catalog {
 }
 ~~~
 
-Por último, tenemos que definir el apartado `Pool` con el nombre `Vol-Backup` que indicamos anteriormente para indicarle algunas opciones del volumen para las copias de seguridad.
+Por último, tenemos que definir los apartados de `Pool` que indicamos anteriormente para indicarle algunas opciones del volumen para las copias de seguridad e indicarle las retenciones para cada uno de los tipos de programación indicados anteriormente.
 
-###### Añadimos el apartado `Pool`
+###### Añadimos los apartados `Pool`
 
 ~~~
+Pool {
+ Name = Daily
+ Use Volume Once = yes
+ Pool Type = Backup
+ AutoPrune = yes
+ VolumeRetention = 10d
+ Recycle = yes
+}
+
+
+Pool {
+ Name = Weekly
+ Use Volume Once = yes
+ Pool Type = Backup
+ AutoPrune = yes
+ VolumeRetention = 30d
+ Recycle = yes
+}
+
+
+Pool {
+ Name = Monthly
+ Use Volume Once = yes
+ Pool Type = Backup
+ AutoPrune = yes
+ VolumeRetention = 365d
+ Recycle = yes
+}
+
+
 Pool {
  Name = Vol-Backup
  Pool Type = Backup
@@ -500,6 +709,12 @@ Pool {
  Label Format = "Remoto"
 }
 ~~~
+
+> **Use Volume Once**: Tenemos que indicar `yes` para indicar bacula que el volumen esta completo, esto hará que empiece a contar la retención en el momento que se haga el priemr `job`. Porque por defecto bacula no activa la retención de ficheros hasta que el volumen este completo.
+>
+> **VolumeRetention**: Indicamos el tiempo que va a guardarse las copias de seguridad en el volumen.
+>
+> **Recycle**: Este campo es para que realice un purgue después de que termine el tiempo de retención.
 
 El resto de apartados `Messages`, `Pool` y `Console` se quedarían por defecto, como muestro a continuación.
 
@@ -1209,3 +1424,5 @@ Nos dice que ha iniciado el `job` llamado `Backup-Croqueta`, con esto, podemos e
 ~~~
 
 Como podemos ver, la copia se ha realizado correctamente. A partir de aquí, podemos ver los estados de los demas cliente, realizar restauraciones, etc.
+
+> **NOTA**: Para saber que significan todos los status, puedes echar un vistazo [AQUÍ](https://www.baculasystems.com/dl/trial_experience/manual//html/main/Job_status.html)
