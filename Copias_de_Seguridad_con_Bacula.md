@@ -670,30 +670,30 @@ Por último, tenemos que definir los apartados de `Pool` que indicamos anteriorm
 ~~~
 Pool {
  Name = Daily
- Use Volume Once = yes
  Pool Type = Backup
  AutoPrune = yes
  VolumeRetention = 10d
+ Volume Use Duration = 5d
  Recycle = yes
 }
 
 
 Pool {
  Name = Weekly
- Use Volume Once = yes
  Pool Type = Backup
  AutoPrune = yes
  VolumeRetention = 30d
+ Volume Use Duration = 5d
  Recycle = yes
 }
 
 
 Pool {
  Name = Monthly
- Use Volume Once = yes
  Pool Type = Backup
  AutoPrune = yes
  VolumeRetention = 365d
+ Volume Use Duration = 5d
  Recycle = yes
 }
 
@@ -809,9 +809,9 @@ En primer lugar vamos a ver como es llamo el volumen en el sistema con el comand
 ~~~
 lsblk -f
   NAME   FSTYPE LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINT
-  vda                                                                     
+  vda
   └─vda1 ext4         6197e068-a892-45cb-9672-a05813e800ee      8G    14% /
-  vdb                   
+  vdb
 ~~~
 
 Como podemos ver, el unico que esta libre es el `vdb`. Sabiendo esto, vamos a utilizar `fdisk` para crear una partición en el volumen completo.
@@ -868,8 +868,8 @@ sudo mkfs.ext4 /dev/vdb1
   Superblock backups stored on blocks: 
   	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632
 
-  Allocating group tables: done                            
-  Writing inode tables: done                            
+  Allocating group tables: done
+  Writing inode tables: done
   Creating journal (16384 blocks): done
   Writing superblocks and filesystem accounting information: done 
 ~~~
@@ -1324,7 +1324,7 @@ Ahora metemos los comando para listar los clientes y ver sus estados, cuando nos
 
 Estamos llegando al final, como último punto antes de realizar las copias de seguridad y de restaurarlas, vamos a ponerle un nombre a nuestro volumen e indicarle el `Pool` que queremos que se le adjunte.
 
-Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `label`, esto hará que solo reconozca nuestro `Catalog` y nuestro `Storage`, luego nombraremos a nuestro volumen y por último indicaremos el `Pool` que queremos utilizar.
+Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `label`, esto hará que solo reconozca nuestro `Catalog` y nuestro `Storage`, luego nombraremos a nuestro volumen y por último indicaremos el `Pool` que queremos utilizar. Esto lo hacemos por cada `Pool`, es decir, para 
 
 ###### Iniciamos la consola de Bacula e introducimos el comando `label`
 
