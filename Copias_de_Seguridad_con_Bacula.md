@@ -160,7 +160,7 @@ Director {
   WorkingDirectory = "/var/lib/bacula"
   PidDirectory = "/run/bacula"
   Maximum Concurrent Jobs = 20
-  Password = "MoralG630789"
+  Password = "************"
   Messages = Daemon
   DirAddress = 10.0.0.17
 }

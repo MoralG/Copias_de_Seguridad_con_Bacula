@@ -9,7 +9,7 @@ Director {
   WorkingDirectory = "/var/lib/bacula"
   PidDirectory = "/run/bacula"
   Maximum Concurrent Jobs = 20
-  Password = "MoralG630789"
+  Password = "**************"
   Messages = Daemon
   DirAddress = 10.0.0.17
 }
@@ -314,7 +314,7 @@ Client {
  Address = 10.0.0.17
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**************"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -325,7 +325,7 @@ Client {
  Address = 10.0.0.6
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**************"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -336,7 +336,7 @@ Client {
  Address = 10.0.0.9
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**************"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -347,7 +347,7 @@ Client {
  Address = 10.0.0.14
  FDPort = 9102
  Catalog = mysql-bacula
- Password = "MoralG630789"
+ Password = "**************"
  File Retention = 90 days
  Job Retention = 6 months
  AutoPrune = yes
@@ -359,7 +359,7 @@ Storage {
  Name = Vol-Serranito
  Address = 10.0.0.17
  SDPort = 9103
- Password = "MoralG630789"
+ Password = "**************"
  Device = FileAutochanger1
  Media Type = File
  Maximum Concurrent Jobs = 10
@@ -369,7 +369,7 @@ Storage {
 
 Catalog {
  Name = mysql-bacula
- dbname = "bacula"; DB Address = "localhost"; dbuser = "bacula"; dbpassword = "MoralG630789"
+ dbname = "bacula"; DB Address = "localhost"; dbuser = "bacula"; dbpassword = "**************"
 }
 
 
