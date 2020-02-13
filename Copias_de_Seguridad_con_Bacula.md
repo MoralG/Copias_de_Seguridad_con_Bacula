@@ -407,7 +407,6 @@ FileSet {
     File = /home
     File = /etc
     File = /var
-    File = /bacula
  }
  Exclude {
     File = /nonexistant/path/to/file/archive/dir
@@ -508,7 +507,7 @@ Ahora vamos a definir la programación para la realización de las copias de seg
 ~~~
 Schedule {
  Name = "Programa-Diario"
- Run = Level=Incremental Pool=Daily daily at 20:20
+ Run = Level=Incremental Pool=Daily daily at 23:05
 }
 
 Schedule {
@@ -994,18 +993,6 @@ Device {
 }
 ~~~
 
-> **Archive Device**:
-> 
-> **LabelMedia**:
-> 
-> **Random Access**:
-> 
-> **AutomaticMount**:
-> 
-> **RemovableMedia**:
-> 
-> **AlwaysOpen**:
-
 Dejamos el apartado `Messages` por defecto.
 
 ~~~
@@ -1081,6 +1068,111 @@ Director {
  Password = "**********"
 }
 ~~~
+
+## Creamos un programa usando crontab para guardar el listado de paquetes
+
+Vamos a crear un script, el cual queremos ejecutarlo todos los días a las 22:55 para que se ejecute antes de la copia diaria y que meta la lista de paquetes instalados en cada máquina.
+
+> **NOTA**: El script en Tortilla, Croqueta y Serranito, va a ser diferente respecto a Salmorejo, ya que en centos se lista de diferente manera los paquetes.
+
+El script lo vamos a guardar en `/var/script` y el fichero con el listado en `/var/local`.
+
+~~~
+sudo mkdir /var/script
+sudo nano /var/script/ListaDePaquetes.sh
+~~~
+
+* En Serranito, Croqueta, Tortilla
+
+Añadimos lo siguiente al fichero `ListaDePaquetes.sh`.
+~~~
+#!/bin/bash
+
+sudo rm /var/local/paquetes.txt
+sudo touch /var/local/paquetes.txt
+sudo dpkg --get-selections > /var/local/paquetes.txt
+~~~
+
+* En Salmorejo
+
+Añadimos lo siguiente al fichero `ListaDePaquetes.sh`.
+~~~
+#!/bin/bash
+
+sudo rm /var/local/paquetes.txt
+sudo touch /var/local/paquetes.txt
+sudo rpm -qa > /var/local/paquetes.txt
+~~~
+
+Le cambiamos los permisos al script para que se pueda ejecuar.
+~~~
+sudo chown root:root /var/script/ListaDePaquetes.sh 
+sudo chmod 744 /var/script/ListaDePaquetes.sh 
+~~~
+
+Ahora vamos a crear el cron. Las tareas cron siguen una determinada sintaxis. Tienen 5 asteriscos seguidos del comando a ejecutar.
+
+~~~
+* * * * * /bin/ejecutar/script.sh
+~~~
+
+Los 5 asteriscos representan, de izquierda a derecha:
+
+* Minutos: de 0 a 59.
+* Horas: de 0 a 23.
+* Día del mes: de 1 a 31.
+* Mes: de 1 a 12.
+* Día de la semana: de 0 a 6, siendo 0 el domingo.
+
+Si se deja un asterisco, quiere decir "cada" minuto, hora, día de mes, mes o día de la semana
+
+Sabíendo esto, vamos a crear un cron con el comando `crontab -e`, seleccionaremos el editor que más nos guste y escribiremos el registro `55 22 * * * /var/script/ListaDePaquetes.sh`.
+~~~
+sudo crontab -e
+no crontab for root - using an empty one
+
+Select an editor.  To change later, run 'select-editor'.
+  1. /usr/bin/joe
+  2. /usr/bin/jstar
+  3. /usr/bin/jpico
+  4. /usr/bin/jmacs
+  5. /bin/nano        <---- easiest
+  6. /usr/bin/vim.basic
+  7. /usr/bin/rjoe
+  8. /usr/bin/vim.tiny
+
+Choose 1-8 [5]: 5
+crontab: installing new crontab
+~~~
+
+Podemos comprobar que esta disponible con:
+~~~
+sudo crontab -l
+  55 22 * * * /var/script/ListaDePaquetes.sh
+~~~
+
+
+Solo quedaría reiniciar el servicio de cron.
+
+* En Serranito, Croqueta, Tortilla
+~~~
+sudo systemctl restart cron.service
+~~~
+
+* En Salmorejo
+~~~
+sudo systemctl restart crond
+~~~
+
+Si queremos restaurar una máquina en un futuro por un fallo, tendremos que restaurar la copia, en la cual se encontrará el fichero `paquetes.txt`. Con este fichero podremos instalar los paquetes con el comando `dselect`.
+
+~~~
+sudo apt install dselect
+sudo dpkg --set-selections < paquetes.txt
+sudo dselect
+~~~
+
+Y se nos instalarían todos los paquetes que teniamos antes del fallo.
 
 ## Configuración de los clientes Serranito, Croqueta, Tortilla y Salmorejo en sus respectivos ficheros `bacula-fd.conf`
 
@@ -1210,6 +1302,8 @@ firewall-cmd --reload
 
 Cuando tengamos reinicado todos los servicios en los clientes y en el servidor y los puertos abiertos, podemos comprobar que todo ha salido bien, listando los clientes, desde la consola de comando de bacula y viendo el estado.
 
+##### Comprobamos la conexión
+
 ###### Iniciamos la consola de bacula
 ~~~
 sudo bconsole
@@ -1324,7 +1418,7 @@ Ahora metemos los comando para listar los clientes y ver sus estados, cuando nos
 
 Estamos llegando al final, como último punto antes de realizar las copias de seguridad y de restaurarlas, vamos a ponerle un nombre a nuestro volumen e indicarle el `Pool` que queremos que se le adjunte.
 
-Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `label`, esto hará que solo reconozca nuestro `Catalog` y nuestro `Storage`, luego nombraremos a nuestro volumen y por último indicaremos el `Pool` que queremos utilizar. Esto lo hacemos por cada `Pool`, es decir, para 
+Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `label`, esto hará que solo reconozca nuestro `Catalog` y nuestro `Storage`, luego nombraremos a nuestro volumen y por último indicaremos el `Pool` que queremos utilizar. Esto lo hacemos por cada `Pool`, es decir, para los pool `Daily`, `Monthly` y `Weekly`.
 
 ###### Iniciamos la consola de Bacula e introducimos el comando `label`
 
@@ -1334,14 +1428,17 @@ Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `l
   Using Catalog "mysql-bacula"
   Automatically selected Storage: Vol-Serranito
   
-  Enter new Volume name: backups
+  Enter new Volume name: Backup-Daily
   
-    Defined Pools:
-         1: Default
-         2: File
-         3: Scratch
-         4: Vol-Backup
-  Select the Pool (1-4): 4
+  Defined Pools:
+       1: Daily
+       2: Default
+       3: File
+       4: Monthly
+       5: Scratch
+       6: Vol-Backup
+       7: Weekly
+  Select the Pool (1-7): 1
   
     Connecting to Storage daemon Vol-Serranito at 10.0.0.17:9103 ...
     Sending label command for Volume "backups" Slot 0 ...
@@ -1350,6 +1447,45 @@ Para realizar esto vamos a iniciar la consola de Bacula y ejecutar el comando `l
     Requesting to mount FileAutochanger1 ...
     3906 File device ""DispositivoCopia" (/bacula/Copias_de_Seguridad)" is always     mounted.
 ~~~
+
+Este proceso lo repitimos para `Weekly` y `Monthly`. Podemos comprobar que se han creado correctamente ejecutando `list volume`.
+
+~~~
+*list volume
+  Pool: Daily
+  +---------+-------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+  | MediaId | VolumeName  | VolStatus | Enabled | VolBytes      | VolFiles | VolRetention | Recycle |   Slot | InChanger | MediaType | VolType | VolParts | LastWritten         | ExpiresIn |
+  +---------+-------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+  |      25 | Backups-Daily | Append    |       1 | 2,690,083,786 |        0 |      864,000 |       1   |    0 |         0 | File      |       1 |        0 | 2020-02-11 23:05:25 |   824,480 |
+  +---------+-------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+  
+  Pool: Default
+  No results to list.
+  
+  Pool: File
+  No results to list.
+  
+  Pool: Monthly
+  +---------+----------------+-----------+---------+-------------+----------+--------------+--------- +------+-----------+-----------+---------+----------+---------------------+------------+
+  | MediaId | VolumeName     | VolStatus | Enabled | VolBytes    | VolFiles | VolRetention | Recycle |  Slot | InChanger | MediaType | VolType | VolParts | LastWritten         | ExpiresIn  |
+  +---------+----------------+-----------+---------+-------------+----------+--------------+--------- +------+-----------+-----------+---------+----------+---------------------+------------+
+  |      26 | Backup-Monthly | Append    |       1 | 569,965,264 |        0 |   31,536,000 |       1 |      0 |         0 | File      |       1 |        0 | 2020-02-02 23:52:46 | 30,721,721 |
+  +---------+----------------+-----------+---------+-------------+----------+--------------+--------- +------+-----------+-----------+---------+----------+---------------------+------------+
+  
+  Pool: Scratch
+  No results to list.
+  
+  Pool: Vol-Backup
+  No results to list.
+  
+  Pool: Weekly
+  +---------+---------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+  | MediaId | VolumeName    | VolStatus | Enabled | VolBytes      | VolFiles | VolRetention | Recycle |   Slot | InChanger | MediaType | VolType | VolParts | LastWritten         | ExpiresIn |
+  +---------+---------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+  |      27 | Backup-Weekly | Append    |       1 | 2,350,966,937 |        0 |    2,592,000 |       1   |    0 |         0 | File      |       1 |        0 | 2020-02-08 23:52:49 | 2,296,124 |
+  +---------+---------------+-----------+---------+---------------+----------+--------------+---------  +------+-----------+-----------+---------+----------+---------------------+-----------+
+~~~
+
 
 Ya tenemos todo configurado para que se realicen la copias de seguridad programadas, pero para no tener que esperar para probar si funciona o no, vamos a hacer que las haga de forma manual.
 
