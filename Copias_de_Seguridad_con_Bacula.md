@@ -1112,6 +1112,8 @@ sudo chmod 744 /var/script/ListaDePaquetes.sh
 
 Ahora vamos a crear el cron. Las tareas cron siguen una determinada sintaxis. Tienen 5 asteriscos seguidos del comando a ejecutar.
 
+**Ejemplo:**
+
 ~~~
 * * * * * /bin/ejecutar/script.sh
 ~~~
