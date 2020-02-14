@@ -1002,7 +1002,7 @@ Messages {
 }
 ~~~
 
-#### El fichero final quedaría de la siguiente manera. [AQUÍ]()
+#### El fichero final quedaría de la siguiente manera. [AQUÍ](https://github.com/MoralG/Copias_de_Seguridad_con_Bacula/blob/master/bacula-sd.conf.md)
 
 Una vez que hayamos terminado de configurar el fichero, guardamos y ejecutamos el siguiente comando para realizar una comprobación, si no devuelve nada, es que todo esta bien.
 
@@ -1078,6 +1078,7 @@ Vamos a crear un script, el cual queremos ejecutarlo todos los días a las 22:55
 El script lo vamos a guardar en `/var/script` y el fichero con el listado en `/var/local`.
 
 ~~~
+sudo touch /var/local/paquetes.txt
 sudo mkdir /var/script
 sudo nano /var/script/ListaDePaquetes.sh
 ~~~
@@ -1088,8 +1089,6 @@ Añadimos lo siguiente al fichero `ListaDePaquetes.sh`.
 ~~~
 #!/bin/bash
 
-sudo rm /var/local/paquetes.txt
-sudo touch /var/local/paquetes.txt
 sudo dpkg --get-selections > /var/local/paquetes.txt
 ~~~
 
@@ -1115,7 +1114,7 @@ Ahora vamos a crear el cron. Las tareas cron siguen una determinada sintaxis. Ti
 **Ejemplo:**
 
 ~~~
-* * * * * /bin/ejecutar/script.sh
+* * * * * <script>
 ~~~
 
 Los 5 asteriscos representan, de izquierda a derecha:
