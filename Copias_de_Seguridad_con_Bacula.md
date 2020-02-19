@@ -1175,6 +1175,16 @@ sudo dselect
 
 Y se nos instalarían todos los paquetes que teniamos antes del fallo.
 
+## Creamos un programa para guardar la base de datos de bacula.
+
+Tenemos que añadir la siguiente linea, ya que si se produce un error en la máquina Serranito y la base de datos fallara, tendríamos las copias de seguridad pero no podriamos restaurarlas porque no tenemos los datos de la base de datos para realizar esa restauración.
+
+Añadimos al script anterior la sigueinte linea para que realice la copia de la base de datos.
+
+~~~
+sudo mysqldump --user=bacula --password=MoralG630789 bacula > /bacula/copia_seguridad.sql
+~~~
+
 ## Configuración de los clientes Serranito, Croqueta, Tortilla y Salmorejo en sus respectivos ficheros `bacula-fd.conf`
 
 La configuración de los clientes se realizan de la misma forma en los 4 clientes, con leves cambios en cada uno de ellos.
