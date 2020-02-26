@@ -813,54 +813,12 @@ lsblk -f
   vdb
 ~~~
 
-Como podemos ver, el unico que esta libre es el `vdb`. Sabiendo esto, vamos a utilizar `fdisk` para crear una partición en el volumen completo.
+Como podemos ver, el unico que esta libre es el `vdb`.
 
-###### Creamos la partición `vdb1`
-
-~~~
-sudo fdisk /dev/vdb 
-
-  Welcome to fdisk (util-linux 2.33.1).
-  Changes will remain in memory only, until you decide to write them.
-  Be careful before using the write command.
-
-  Device does not contain a recognized partition table.
-  Created a new DOS disklabel with disk identifier 0xdfddf621.
-
-  Command (m for help): n
-  Partition type
-     p   primary (0 primary, 0 extended, 4 free)
-     e   extended (container for logical partitions)
-  Select (default p): p
-  Partition number (1-4, default 1): 1
-  First sector (2048-20971519, default 2048): 
-  Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-20971519, default 20971519): 
-
-  Created a new partition 1 of type 'Linux' and of size 10 GiB.
-
-  Command (m for help): p
-  Disk /dev/vdb: 10 GiB, 10737418240 bytes, 20971520 sectors
-  Units: sectors of 1 * 512 = 512 bytes
-  Sector size (logical/physical): 512 bytes / 512 bytes
-  I/O size (minimum/optimal): 512 bytes / 512 bytes
-  Disklabel type: dos
-  Disk identifier: 0xdfddf621
-
-  Device     Boot Start      End  Sectors Size Id Type
-  /dev/vdb1        2048 20971519 20969472  10G 83 Linux
-
-  Command (m for help): w
-  The partition table has been altered.
-  Calling ioctl() to re-read partition table.
-  Syncing disks.
-~~~
-
-Creada la partición, tenemos que formatearla con un sistema de ficheros `ext4`.
-
-###### Formateamos la partición `vdb1`
+###### Formateamos la partición `vdb`
 
 ~~~
-sudo mkfs.ext4 /dev/vdb1 
+sudo mkfs.ext4 /dev/vdb
   mke2fs 1.44.5 (15-Dec-2018)
   Creating filesystem with 2621184 4k blocks and 655360 inodes
   Filesystem UUID: faed35cd-a6d0-4ff3-842d-fc347ccbd75b
@@ -891,7 +849,7 @@ sudo chmod 755 /bacula -R
 ###### Copiamos el `UUID` para utilizarlo en el fichero `fstab`
 
 ~~~
-lsblk -f | egrep "vdb1 *" | cut -d" " -f11
+lsblk -f | egrep "vdb *" | cut -d" " -f11
   faed35cd-a6d0-4ff3-842d-fc347ccbd75b
 ~~~
 
@@ -914,8 +872,7 @@ lsblk -l
   NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
   vda  254:0    0  10G  0 disk 
   vda1 254:1    0  10G  0 part /
-  vdb  254:16   0  10G  0 disk 
-  vdb1 254:17   0  10G  0 part /bacula/Copias_de_Seguridad
+  vdb  254:16   0  10G  0 disk /bacula/Copias_de_Seguridad
 ~~~
 
 ## Configuración del fichero `bacula-sd.conf`
@@ -1077,6 +1034,8 @@ Vamos a crear un script, el cual queremos ejecutarlo todos los días a las 22:55
 
 El script lo vamos a guardar en `/var/script` y el fichero con el listado en `/var/local`.
 
+* En Serranito, Croqueta, Tortilla, Salmorejo
+
 ~~~
 sudo touch /var/local/paquetes.txt
 sudo mkdir /var/script
@@ -1098,9 +1057,7 @@ Añadimos lo siguiente al fichero `ListaDePaquetes.sh`.
 ~~~
 #!/bin/bash
 
-sudo rm /var/local/paquetes.txt
-sudo touch /var/local/paquetes.txt
-sudo rpm -qa > /var/local/paquetes.txt
+sudo dnf repoquery --qf '%{name}' --userinstalled  > /var/local/paquetes.txt
 ~~~
 
 Le cambiamos los permisos al script para que se pueda ejecuar.
@@ -1165,12 +1122,19 @@ sudo systemctl restart cron.service
 sudo systemctl restart crond
 ~~~
 
-Si queremos restaurar una máquina en un futuro por un fallo, tendremos que restaurar la copia, en la cual se encontrará el fichero `paquetes.txt`. Con este fichero podremos instalar los paquetes con el comando `dselect`.
+Si queremos restaurar una máquina en un futuro por un fallo, tendremos que restaurar la copia, en la cual se encontrará el fichero `paquetes.txt`.
 
+* En Serranito, Croqueta y Tortilla 
 ~~~
 sudo apt install dselect
 sudo dpkg --set-selections < paquetes.txt
 sudo dselect
+~~~
+
+* En Sallmorejo
+
+~~~
+< paquetes.txt xargs dnf -y install
 ~~~
 
 Y se nos instalarían todos los paquetes que teniamos antes del fallo.
@@ -1182,7 +1146,7 @@ Tenemos que añadir la siguiente linea, ya que si se produce un error en la máq
 Añadimos al script anterior la sigueinte linea para que realice la copia de la base de datos.
 
 ~~~
-sudo mysqldump --user=bacula --password=MoralG630789 bacula > /bacula/copia_seguridad.sql
+sudo mysqldump --user=bacula --password=******** bacula > /bacula/Copias_de_Seguridad/copia_seguridad.sql
 ~~~
 
 ## Configuración de los clientes Serranito, Croqueta, Tortilla y Salmorejo en sus respectivos ficheros `bacula-fd.conf`
